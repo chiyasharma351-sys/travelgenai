@@ -16,12 +16,18 @@ import {
   ClipboardList,
   Lightbulb,
   Moon,
+  Save,
   Sun,
   Sunrise,
   TramFront,
   UtensilsCrossed,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { useUser, useFirestore } from "@/firebase";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, serverTimestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 const ActivityCard = ({
   title,
@@ -42,14 +48,59 @@ const ActivityCard = ({
 );
 
 export function ItineraryDisplay({ itinerary }: { itinerary: Itinerary }) {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const handleSaveTrip = async () => {
+        if (!user || !firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Not Logged In',
+                description: 'You must be logged in to save a trip.',
+            });
+            return;
+        }
+
+        const tripData = {
+            ...itinerary,
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+        };
+        
+        const tripsCollectionRef = collection(firestore, `users/${user.uid}/trips`);
+        addDocumentNonBlocking(tripsCollectionRef, tripData)
+          .then(() => {
+              toast({
+                  title: 'Trip Saved!',
+                  description: 'Your itinerary has been saved to your account.',
+              });
+          })
+          .catch((error) => {
+              console.error("Failed to save trip:", error);
+              toast({
+                  variant: "destructive",
+                  title: "Save Failed",
+                  description: "Could not save your trip. Please try again."
+              });
+          });
+    };
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <Card className="overflow-hidden">
-        <CardHeader className="bg-muted/30">
-          <CardTitle className="font-headline text-3xl">
-            Your Trip to {itinerary.trip_summary.split(" to ")[1]?.split(" for ")[0] || 'your destination!'}
-          </CardTitle>
-          <CardDescription>{itinerary.trip_summary}</CardDescription>
+        <CardHeader className="bg-muted/30 flex-row items-center justify-between">
+            <div>
+                <CardTitle className="font-headline text-3xl">
+                    Your Trip to {(itinerary as any).destination || itinerary.trip_summary.split(' to ')[1]?.split(' for ')[0] || 'your destination!'}
+                </CardTitle>
+                <CardDescription>{itinerary.trip_summary}</CardDescription>
+            </div>
+            {user && (
+                <Button onClick={handleSaveTrip} size="lg">
+                    <Save className="mr-2 h-4 w-4" /> Save Trip
+                </Button>
+            )}
         </CardHeader>
         <CardContent className="p-6">
           <Badge>{itinerary.total_days} Days</Badge>

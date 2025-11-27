@@ -1,18 +1,19 @@
-"use client";
+'use client';
 
-import type { Itinerary } from "@/lib/types";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
+import type { Itinerary } from '@/lib/types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { format } from 'date-fns';
 import {
   Calendar as CalendarIcon,
   MapPin,
   Users,
   Wallet,
   WandSparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+  Save,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -20,47 +21,50 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { getItinerary } from "@/app/actions";
+} from '@/components/ui/card';
+import { getItinerary } from '@/app/actions';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import type { DateRange } from "react-day-picker";
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
+import type { DateRange } from 'react-day-picker';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { useToast } from "@/hooks/use-toast";
+} from './ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { useUser, useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z
   .object({
-    destination: z.string().min(2, "Please enter a destination."),
+    destination: z.string().min(2, 'Please enter a destination.'),
     dates: z
       .object({
         from: z.date(),
         to: z.date(),
       })
-      .refine((data) => data.from && data.to, "Please select a date range."),
-    budget: z.enum(["economical", "standard", "luxury"]),
+      .refine((data) => data.from && data.to, 'Please select a date range.'),
+    budget: z.enum(['economical', 'standard', 'luxury']),
     travelers: z.coerce
       .number()
       .int()
-      .min(1, "There must be at least one traveler."),
+      .min(1, 'There must be at least one traveler.'),
   });
 
 type ItineraryFormProps = {
@@ -75,12 +79,14 @@ export function ItineraryForm({
   setError,
 }: ItineraryFormProps) {
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      destination: "",
-      budget: "standard",
+      destination: '',
+      budget: 'standard',
       travelers: 1,
     },
   });
@@ -94,8 +100,8 @@ export function ItineraryForm({
 
     const input = {
       destination: values.destination,
-      from_date: format(values.dates.from, "yyyy-MM-dd"),
-      to_date: format(values.dates.to, "yyyy-MM-dd"),
+      from_date: format(values.dates.from, 'yyyy-MM-dd'),
+      to_date: format(values.dates.to, 'yyyy-MM-dd'),
       budget_type: values.budget,
       travellers: values.travelers,
     };
@@ -105,8 +111,8 @@ export function ItineraryForm({
     if (result.error) {
       setError(result.error);
       toast({
-        variant: "destructive",
-        title: "Generation Failed",
+        variant: 'destructive',
+        title: 'Generation Failed',
         description: result.error,
       });
     } else if (result.data) {
@@ -115,6 +121,41 @@ export function ItineraryForm({
     
     setIsLoading(false);
   }
+
+  const handleSaveTrip = async (itinerary: Itinerary) => {
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Logged In',
+        description: 'You must be logged in to save a trip.',
+      });
+      return;
+    }
+
+    const tripData = {
+      ...itinerary,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      destination: form.getValues('destination'),
+    };
+
+    try {
+      const tripsCollectionRef = collection(firestore, `users/${user.uid}/trips`);
+      await addDocumentNonBlocking(tripsCollectionRef, tripData);
+      toast({
+        title: 'Trip Saved!',
+        description: 'Your itinerary has been saved to your account.',
+      });
+    } catch (error) {
+      console.error('Error saving trip:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: 'Could not save your trip. Please try again.',
+      });
+    }
+  };
+
 
   return (
     <Card className="shadow-2xl shadow-primary/10">
@@ -160,21 +201,21 @@ export function ItineraryForm({
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={"outline"}
+                            variant={'outline'}
                             className={cn(
-                              "w-full pl-3 text-left font-normal justify-start",
-                              !field.value && "text-muted-foreground"
+                              'w-full pl-3 text-left font-normal justify-start',
+                              !field.value && 'text-muted-foreground'
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value?.from ? (
                               field.value.to ? (
                                 <>
-                                  {format(field.value.from, "LLL dd, y")} -{" "}
-                                  {format(field.value.to, "LLL dd, y")}
+                                  {format(field.value.from, 'LLL dd, y')} -{' '}
+                                  {format(field.value.to, 'LLL dd, y')}
                                 </>
                               ) : (
-                                format(field.value.from, "LLL dd, y")
+                                format(field.value.from, 'LLL dd, y')
                               )
                             ) : (
                               <span>Pick a date range</span>

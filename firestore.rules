@@ -1,122 +1,21 @@
-/**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-related data,
- * specifically trips, is isolated within a user's own document tree. Access is granted only to the
- * authenticated user who owns the data, ensuring strong privacy and data protection by default.
- *
- * Data Structure: The data is organized hierarchically. A top-level 'users' collection holds
- * individual user profiles. Each user document then contains a 'trips' subcollection for their
- * private travel itineraries. The structure is /users/{userId}/trips/{tripId}.
- *
- * Key Security Decisions:
- * - User Isolation: A user can only ever access documents within their own data tree (i.e., /users/{their_own_uid}/...).
- * - No User Listing: To protect user privacy and prevent data scraping, listing documents in the top-level '/users' collection is explicitly disallowed.
- * - Path-Based Security: The rules heavily leverage the document path to determine ownership, which is fast, secure, and easy to reason about.
- * - Default Deny: All operations are denied by default and are only explicitly allowed through specific rules.
- *
- * Denormalization for Authorization: The Trip entity contains a `userId` field. These rules enforce that on creation, this
- * field must match the `userId` from the path. This creates a redundant but powerful link between the data and its
- * location, ensuring relational integrity without needing extra database reads. This `userId` field is then made immutable
- * on updates to prevent re-assigning ownership.
- *
- * Structural Segregation: The design inherently uses structural segregation. All trips are private and stored in user
- * subcollections. There is no concept of public or shared trips in this model, so a separate top-level 'publicTrips'
- * collection is not needed.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions to promote readable, secure, and maintainable rules.
-
-    /**
-     * Checks if the request is from an authenticated user.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     * This is the primary function for enforcing data ownership.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * A stricter ownership check for update and delete operations. It verifies
-     * that the user is the owner AND that the document already exists.
-     * This prevents operations on non-existent documents from being processed.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * Validates a new user profile document upon creation.
-     * Ensures the internal 'id' field matches the user's auth UID, establishing
-     * a permanent and trustworthy link between the document and the user.
-     */
-    function isValidNewUserDoc(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Ensures critical fields of a user profile are not changed after creation.
-     * Specifically, it makes the internal 'id' field immutable.
-     */
-    function isImmutableUserDoc() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * Validates a new trip document upon creation.
-     * Ensures the internal 'userId' field matches the owner's UID from the path,
-     * enforcing relational integrity from the start.
-     */
-    function isValidNewTripDoc(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Ensures critical fields of a trip are not changed after creation.
-     * Specifically, it makes the 'userId' field immutable to prevent changing ownership.
-     */
-    function isImmutableTripDoc() {
-      return request.resource.data.userId == resource.data.id;
-    }
-
-    /**
-     * @description Manages access to user profile documents. Users can manage their own profile but cannot see others.
-     * @path /users/{userId}
-     * @allow A logged-in user creating their own profile: (create) request where request.auth.uid == userId.
-     * @allow An existing user reading or updating their own profile: (get, update) request where request.auth.uid == userId.
-     * @deny An authenticated user trying to read another user's profile: (get) request where request.auth.uid != userId.
-     * @deny Any user, authenticated or not, trying to list all user profiles: (list) request.
-     * @principle Restricts access to a user's own data tree and prevents user enumeration for privacy.
-     */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && isValidNewUserDoc(userId);
-      allow update: if isExistingOwner(userId) && isImmutableUserDoc();
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
-
-    /**
-     * @description Controls access to a user's private trip documents, nested under their profile.
-     * @path /users/{userId}/trips/{tripId}
-     * @allow The owner of the data tree creating a new trip: (create) request where request.auth.uid == userId.
-     * @allow The owner reading or listing their own trips: (get, list) request where request.auth.uid == userId.
-     * @deny An authenticated user trying to access trips belonging to another user: (get, list) request where request.auth.uid != userId.
-     * @principle Enforces document ownership using path-based security, ensuring a user can only access data within their own subcollections.
-     */
+    
     match /users/{userId}/trips/{tripId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidNewTripDoc(userId);
-      allow update: if isExistingOwner(userId) && isImmutableTripDoc();
-      allow delete: if isExistingOwner(userId);
+      allow read, list, create, update, delete: if isOwner(userId);
     }
   }
 }
