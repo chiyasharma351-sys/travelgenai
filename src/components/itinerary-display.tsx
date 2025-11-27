@@ -21,6 +21,11 @@ import {
   Sunrise,
   TramFront,
   UtensilsCrossed,
+  Hotel,
+  Plane,
+  Thermometer,
+  Shirt,
+  Briefcase,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -46,6 +51,22 @@ const ActivityCard = ({
     </div>
   </div>
 );
+
+const InfoCard = ({ title, icon, content }: { title: string, icon: React.ReactNode, content?: string }) => {
+    if (!content) return null;
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center gap-4 space-y-0">
+                {icon}
+                <CardTitle className="font-headline text-2xl">{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">{content}</p>
+            </CardContent>
+        </Card>
+    )
+};
+
 
 export function ItineraryDisplay({ itinerary }: { itinerary: Itinerary }) {
     const { user } = useUser();
@@ -136,18 +157,17 @@ export function ItineraryDisplay({ itinerary }: { itinerary: Itinerary }) {
           ))}
         </Accordion>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InfoCard title="Hotel Recommendations" icon={<Hotel className="w-6 h-6 text-primary" />} content={itinerary.hotel_recommendations} />
+          <InfoCard title="Flight Recommendations" icon={<Plane className="w-6 h-6 text-primary" />} content={itinerary.flight_recommendations} />
+          <InfoCard title="Weather Details" icon={<Thermometer className="w-6 h-6 text-primary" />} content={itinerary.weather_details} />
+          <InfoCard title="Clothing Suggestions" icon={<Shirt className="w-6 h-6 text-primary" />} content={itinerary.clothing_suggestions} />
+      </div>
 
-      <Card>
-        <CardHeader className="flex-row items-center gap-4 space-y-0">
-          <Lightbulb className="w-6 h-6 text-primary" />
-          <CardTitle className="font-headline text-2xl">
-            Traveler Tips
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground whitespace-pre-wrap">{itinerary.tips}</p>
-        </CardContent>
-      </Card>
+      <InfoCard title="Packing List" icon={<Briefcase className="w-6 h-6 text-primary" />} content={itinerary.packing_list} />
+      <InfoCard title="Traveler Tips" icon={<Lightbulb className="w-6 h-6 text-primary" />} content={itinerary.tips} />
+
     </div>
   );
 }

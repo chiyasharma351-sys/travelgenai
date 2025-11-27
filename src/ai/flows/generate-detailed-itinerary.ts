@@ -38,6 +38,11 @@ const GenerateDetailedItineraryOutputSchema = z.object({
     })
   ).describe('The detailed day-wise itinerary.'),
   tips: z.string().describe('Weather, safety, and transport tips.'),
+  hotel_recommendations: z.string().describe('Hotel recommendations based on budget and destination.'),
+  flight_recommendations: z.string().describe('Flight recommendations for the trip.'),
+  weather_details: z.string().describe('Detailed weather forecast for the trip duration.'),
+  clothing_suggestions: z.string().describe('Clothing suggestions based on weather and activities.'),
+  packing_list: z.string().describe('A comprehensive packing list for the trip.'),
 });
 
 export type GenerateDetailedItineraryOutput = z.infer<typeof GenerateDetailedItineraryOutputSchema>;
@@ -66,14 +71,18 @@ const prompt = ai.definePrompt({
 
   Each day must include:
 
-  Morning activity
-  Afternoon activity
-  Evening activity
-  Local commute info
-  Food recommendations based on budget_type
-  Cost-conscious suggestions for economical / comfort options for standard / premium experiences for luxury
+  - Morning, Afternoon, and Evening activities
+  - Local commute information
+  - Food recommendations based on budget_type (cost-conscious for economical, comfort for standard, premium for luxury)
 
-  Provide weather, safety, and transport tips relevant for the destination.
+  In addition to the daily plan, provide the following sections:
+
+  - Hotel Recommendations: Suggest 3-4 hotels fitting the budget.
+  - Flight Recommendations: Suggest potential airlines or flight routes.
+  - Weather Details: Describe the expected weather during the trip dates.
+  - Clothing Suggestions: Recommend clothing based on the weather and planned activities.
+  - Packing List: Generate a comprehensive packing list.
+  - Traveler Tips: Provide weather, safety, and transport tips relevant for the destination.
 
   {{#if previous_itineraries}}
   Reference previous itineraries naturally—do NOT repeat them. Use them only to personalize recommendations.
@@ -85,21 +94,26 @@ const prompt = ai.definePrompt({
   Always output in the following JSON format:
 
   {
-  "trip_summary": "...",
-  "total_days": number,
-  "itinerary": [
-  {
-  "day": 1,
-  "title": "Day 1: ...",
-  "morning": "...",
-  "afternoon": "...",
-  "evening": "...",
-  "commute": "...",
-  "food": "...",
-  "notes": "..."
-  }
-  ],
-  "tips": "..."
+    "trip_summary": "...",
+    "total_days": number,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Day 1: ...",
+        "morning": "...",
+        "afternoon": "...",
+        "evening": "...",
+        "commute": "...",
+        "food": "...",
+        "notes": "..."
+      }
+    ],
+    "tips": "...",
+    "hotel_recommendations": "...",
+    "flight_recommendations": "...",
+    "weather_details": "...",
+    "clothing_suggestions": "...",
+    "packing_list": "..."
   }
 
   Your goal is to help the user plan the perfect trip based on their preferences.
@@ -117,4 +131,3 @@ const generateDetailedItineraryFlow = ai.defineFlow(
     return output!;
   }
 );
-
