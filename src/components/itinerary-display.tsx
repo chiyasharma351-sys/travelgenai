@@ -183,7 +183,7 @@ export function ItineraryDisplay({ itinerary }: { itinerary: Itinerary }) {
         </h3>
         <Accordion type="single" collapsible defaultValue="item-0">
           {itinerary.itinerary.map((day, index) => (
-            <AccordionItem value={`item-${index}`} key={day.day}>
+            <AccordionItem value={`item-${index}`} key={index}>
               <AccordionTrigger className="text-lg font-semibold hover:no-underline">
                 <div className="flex items-center gap-4">
                   <Badge variant="secondary" className="text-base">
