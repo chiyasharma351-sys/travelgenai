@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
-import { AuthErrorCodes } from 'firebase/auth';
+import { AuthErrorCodes, createUserWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -51,7 +51,7 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      await initiateEmailSignUp(auth, values.email, values.password);
+      await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Signup Successful',
         description: "You're now logged in.",
@@ -67,6 +67,8 @@ export default function SignupPage() {
           description = 'An account with this email already exists.';
         } else if (error.code === AuthErrorCodes.WEAK_PASSWORD) {
           description = 'The password is too weak. Please choose a stronger password.';
+        } else {
+            description = `An error occurred: ${error.message}`;
         }
       }
 
