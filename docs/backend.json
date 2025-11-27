@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the TravelGenAI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "Trip": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Trip",
+      "type": "object",
+      "description": "Represents a travel itinerary generated for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the trip.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Trip)"
+        },
+        "destination": {
+          "type": "string",
+          "description": "Destination of the trip."
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Start date of the trip.",
+          "format": "date"
+        },
+        "toDate": {
+          "type": "string",
+          "description": "End date of the trip.",
+          "format": "date"
+        },
+        "budgetType": {
+          "type": "string",
+          "description": "Budget type for the trip (economical, standard, luxury)."
+        },
+        "travelers": {
+          "type": "number",
+          "description": "Number of travelers for the trip."
+        },
+        "tripSummary": {
+          "type": "string",
+          "description": "Summary of the trip itinerary."
+        },
+        "totalDays": {
+          "type": "number",
+          "description": "Total number of days for the trip."
+        },
+        "itinerary": {
+          "type": "array",
+          "description": "Detailed day-wise itinerary.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tips": {
+          "type": "string",
+          "description": "Tips for the trip."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "destination",
+        "fromDate",
+        "toDate",
+        "budgetType",
+        "travelers",
+        "tripSummary",
+        "totalDays",
+        "itinerary",
+        "tips"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Authentication is handled via Firebase Auth, and this collection stores additional user data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, corresponding to their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/trips/{tripId}",
+        "definition": {
+          "entityName": "Trip",
+          "schema": {
+            "$ref": "#/backend/entities/Trip"
+          },
+          "description": "Stores trip itineraries specific to each user. Access is restricted to the user identified by {userId}. This path structure enforces ownership and simplifies security rules, guaranteeing that only the authenticated user can access their own trips.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the trip."
+            },
+            {
+              "name": "tripId",
+              "description": "The unique identifier for the trip."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure secure access and manage user-specific travel itineraries. We leverage path-based ownership for `Trips`, storing them as subcollections of user documents (`/users/{userId}/trips/{tripId}`). This structure ensures that only the authenticated user has access to their respective trips. This structure is chosen because it provides clear ownership. It avoids unnecessary denormalization, focusing on direct, path-based ownership which simplifies security rules and queries. By storing trips under each user's document, we avoid needing to query across the entire `trips` collection, which could be inefficient as the number of trips grows. This approach aligns with the principle of Authorization Independence as it relies solely on the user's ID to control access to their respective trips. The structure also facilitates QAPs (Rules Are Not Filters) because security rules can directly check the `userId` against the authenticated user's ID, enabling secure `list` operations without needing to filter based on document content."
+  }
+}
