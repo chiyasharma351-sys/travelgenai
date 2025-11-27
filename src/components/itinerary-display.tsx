@@ -71,7 +71,8 @@ const InfoCard = ({
 }) => {
   if (!content) return null;
   
-  const contentPreview = content.split('\n').filter(line => line.trim().startsWith('-') || line.trim().startsWith('*')).slice(0, 2).join('\n');
+  const listItems = content.split('\n').filter(line => line.trim().startsWith('-') || line.trim().startsWith('*'));
+  const contentPreview = listItems.slice(0, 2).join('\n');
   const hasPreview = contentPreview.length > 0;
 
   return (
@@ -83,7 +84,7 @@ const InfoCard = ({
       <CardContent className="flex-grow">
         {hasPreview ? (
              <ul className="text-muted-foreground space-y-1 list-disc pl-5">
-                {contentPreview.split('\n').map((line, i) => (
+                {listItems.slice(0, 2).map((line, i) => (
                     <li key={i} className="truncate">{line.replace(/^- \s*/, '')}</li>
                 ))}
              </ul>
@@ -104,7 +105,11 @@ const InfoCard = ({
             </DialogTitle>
           </DialogHeader>
           <div className="prose prose-sm dark:prose-invert max-h-[60vh] overflow-y-auto pr-4">
-            <p className="whitespace-pre-wrap">{content}</p>
+            <ul className="list-disc pl-5 space-y-1">
+              {content.split('\n').map((item, index) => (
+                item.trim() && <li key={index}>{item.replace(/^- \s*/, '')}</li>
+              ))}
+            </ul>
           </div>
         </DialogContent>
       </Dialog>
