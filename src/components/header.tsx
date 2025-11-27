@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Send, LogOut, LogIn, UserPlus, NotebookText } from 'lucide-react';
+import { Send, LogOut, LogIn, UserPlus, NotebookText, WandSparkles } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
@@ -27,17 +27,28 @@ export function Header() {
           </h2>
         </Link>
         
+        <nav className="hidden md:flex items-center gap-2">
+          <Button variant="ghost" asChild>
+            <Link href="/plan-trip">
+              <WandSparkles />
+              Plan Trip
+            </Link>
+          </Button>
+          {user && (
+            <Button variant="ghost" asChild>
+              <Link href="/trips">
+                <NotebookText />
+                My Trips
+              </Link>
+            </Button>
+          )}
+        </nav>
+
         <div className="flex items-center gap-2">
           {isUserLoading ? (
             <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
           ) : user ? (
             <>
-              <Button variant="ghost" asChild>
-                <Link href="/trips">
-                  <NotebookText />
-                  My Trips
-                </Link>
-              </Button>
               <Button variant="outline" onClick={handleLogout}>
                 <LogOut />
                 Logout

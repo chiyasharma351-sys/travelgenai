@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { ItineraryForm } from "@/components/itinerary-form";
-import { ItineraryDisplay } from "@/components/itinerary-display";
+import Link from 'next/link';
 import { Header } from "@/components/header";
-import { LoadingSpinner } from "@/components/loading-spinner";
-import type { Itinerary } from "@/lib/types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Bot, Plane, Briefcase, UserCheck, Send } from "lucide-react";
+import { Bot, Plane, Briefcase, UserCheck, Send, ArrowRight } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
   <Card className="text-center">
@@ -28,17 +24,13 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
 
 
 export default function Home() {
-  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const heroImage = PlaceHolderImages.find((img) => img.id === "hero-background");
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <section className="relative h-[50vh] md:h-[60vh] flex items-center justify-center text-center text-white px-4">
+        <section className="relative h-[60vh] md:h-[70vh] flex items-center justify-center text-center text-white px-4">
           {heroImage && (
             <Image
               src={heroImage.imageUrl}
@@ -50,7 +42,7 @@ export default function Home() {
             />
           )}
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative z-10 space-y-4 max-w-4xl mx-auto">
+          <div className="relative z-10 space-y-6 max-w-4xl mx-auto">
             <Send className="w-20 h-20 text-primary mx-auto" />
             <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
               Welcome to TravelGenAI
@@ -59,6 +51,12 @@ export default function Home() {
               Let AI be your guide. Get personalized, detailed travel
               itineraries in seconds, complete with recommendations for flights, hotels, packing, and more. Your next adventure starts here.
             </p>
+            <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Link href="/plan-trip">
+                Start Planning Your Trip
+                <ArrowRight />
+              </Link>
+            </Button>
           </div>
         </section>
 
@@ -92,32 +90,6 @@ export default function Home() {
                 description="Create an account to save your generated itineraries and access them anytime, anywhere."
               />
             </div>
-          </div>
-        </section>
-
-        <section className="container mx-auto px-4 py-8 md:py-12">
-          <div id="plan-trip" className="scroll-mt-20">
-            <ItineraryForm
-              setItinerary={setItinerary}
-              setIsLoading={setIsLoading}
-              setError={setError}
-            />
-          </div>
-
-          <div className="mt-8 md:mt-12">
-            {isLoading && <LoadingSpinner />}
-            {error && (
-              <Alert variant="destructive" className="max-w-3xl mx-auto">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            {itinerary && (
-              <div className="animate-in fade-in-50 duration-500">
-                <ItineraryDisplay itinerary={itinerary} />
-              </div>
-            )}
           </div>
         </section>
       </main>
